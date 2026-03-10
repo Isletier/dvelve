@@ -1,33 +1,31 @@
-.DEFAULT_GOAL=test
+.DEFAULT_GOAL := test
 
-SHELL := /bin/bash
-GO_SRC := $(shell find . -type f -not -path './_fixtures/*' -not -path './vendor/*' -not -path './_scripts/*' -not -path './localtests/*' -name '*.go')
+# Build the dlv binary.
+build:
+	go build -o dlv ./cmd/
 
-check-cert:
-	@go run _scripts/make.go check-cert
+# Install dlv to GOPATH/bin.
+install:
+	go install ./cmd/
 
-build: $(GO_SRC)
-	@go run _scripts/make.go build
-
-install: $(GO_SRC)
-	@go run _scripts/make.go install
-
+# Remove dlv from GOPATH/bin.
 uninstall:
-	@go run _scripts/make.go uninstall
+	go env GOPATH | xargs -I{} rm -f {}/bin/dlv
 
-test: vet
-	@go run _scripts/make.go test -v
-
+# Run go vet across all packages.
 vet:
-	@go vet -tags exp.linuxppc64le $$(go list -tags exp.linuxppc64le ./... | grep -v native)
+	go vet ./...
 
-vendor:
-	@go run _scripts/make.go vendor
+# Run all tests.
+test: vet
+	go test ./...
 
-build-ebpf-image:
-	./pkg/proc/internal/ebpf/build/build-ebpf-builder-img.sh
+# Run only the DVAP package tests (fast).
+test-dvap:
+	go test -v ./service/dvap/
 
-build-ebpf-object: build-ebpf-image
-	./pkg/proc/internal/ebpf/build/build-ebpf-objects.sh
+# Run only the terminal package tests.
+test-terminal:
+	go test ./pkg/terminal/...
 
-.PHONY: vendor test-integration-run test-proc-run test check-cert install build vet uninstall build-ebpf-image build-ebpf-object
+.PHONY: build install uninstall vet test test-dvap test-terminal

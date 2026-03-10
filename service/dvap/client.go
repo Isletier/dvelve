@@ -17,6 +17,15 @@ func NewClient(inner service.Client, srv *Server) *Client {
 	return &Client{Client: inner, srv: srv}
 }
 
+// goroutineFetchLimit is the maximum number of goroutines fetched per broadcast.
+// Programs with more goroutines than this are paginated: the first
+// goroutineFetchLimit goroutines are fetched, and the selected goroutine is
+// always appended if it falls outside that window. This bounds RPC payload
+// size while ensuring the focused goroutine is never silently dropped.
+// FormatState then applies its own status-based filter and MaxGoroutines cap
+// on the client side, so the broadcast size is always predictable.
+const goroutineFetchLimit = MaxGoroutines * 8 // 4096
+
 // broadcastState fetches current goroutines and breakpoints then broadcasts.
 // st carries the DebuggerState returned by a just-completed operation; when
 // nil the state is fetched with GetStateNonBlocking and the broadcast is
@@ -33,7 +42,22 @@ func (c *Client) broadcastState(st *api.DebuggerState) {
 	if st.SelectedGoroutine != nil {
 		selectedGoid = st.SelectedGoroutine.ID
 	}
-	goroutines, _, _ := c.Client.ListGoroutines(0, 0)
+	goroutines, _, _ := c.Client.ListGoroutines(0, goroutineFetchLimit)
+	// Ensure the selected goroutine is always present even when it falls
+	// outside the fetch window (e.g. it is waiting/parked and goroutineFetchLimit
+	// was reached before reaching it in the server's ordering).
+	if st.SelectedGoroutine != nil {
+		found := false
+		for _, g := range goroutines {
+			if g.ID == selectedGoid {
+				found = true
+				break
+			}
+		}
+		if !found {
+			goroutines = append(goroutines, st.SelectedGoroutine)
+		}
+	}
 	breakpoints, _ := c.Client.ListBreakpoints(false)
 	c.srv.Broadcast(FormatState(goroutines, breakpoints, selectedGoid))
 }

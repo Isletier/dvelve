@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Isletier/dvelve/cmd/dlv/cmds/helphelpers"
+	"github.com/Isletier/dvelve/cmd/cmds/helphelpers"
 	"github.com/Isletier/dvelve/service/dvap"
 	"github.com/go-delve/delve/pkg/config"
 	"github.com/go-delve/delve/pkg/gobuild"
@@ -1070,6 +1070,9 @@ func execute(attachPid int, processArgs []string, conf *config.Config, coreFile 
 
 	if headless && (initFile != "") {
 		fmt.Fprint(os.Stderr, "Warning: init file ignored with --headless\n")
+	}
+	if headless && dvapAddr != "" {
+		fmt.Fprint(os.Stderr, "Warning: --dvap has no effect with --headless (no local terminal to drive broadcasts)\n")
 	}
 	if continueOnStart {
 		if !headless {

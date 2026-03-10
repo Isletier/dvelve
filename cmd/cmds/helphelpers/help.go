@@ -53,6 +53,7 @@ func Prepare(cmd *cobra.Command) {
 		hideFlag(cmd, "redirect")
 		hideFlag(cmd, "api-version")
 		hideFlag(cmd, "allow-non-terminal-interactive")
+		hideFlag(cmd, "dvap") // DAP mode has no local terminal; DVAP broadcasts are not applicable
 	case "debug", "test":
 		// All flags apply
 	case "exec":
@@ -67,6 +68,7 @@ func Prepare(cmd *cobra.Command) {
 		hideFlag(cmd, "accept-multiclient")
 		hideFlag(cmd, "allow-non-terminal-interactive")
 		hideFlag(cmd, "api-version")
+		hideFlag(cmd, "dvap") // trace has its own output mechanism; DVAP is not applicable
 		hideFlag(cmd, "headless")
 		hideFlag(cmd, "init")
 		hideFlag(cmd, "listen")
