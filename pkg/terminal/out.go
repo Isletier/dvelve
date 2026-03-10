@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/go-delve/delve/pkg/terminal/colorize"
+	"github.com/Isletier/dvelve/pkg/terminal/colorize"
 	"github.com/mattn/go-isatty"
 )
 

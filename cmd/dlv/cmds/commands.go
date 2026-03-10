@@ -17,13 +17,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-delve/delve/cmd/dlv/cmds/helphelpers"
+	"github.com/Isletier/dvelve/cmd/dlv/cmds/helphelpers"
+	"github.com/Isletier/dvelve/service/dvap"
 	"github.com/go-delve/delve/pkg/config"
 	"github.com/go-delve/delve/pkg/gobuild"
 	"github.com/go-delve/delve/pkg/goversion"
 	"github.com/go-delve/delve/pkg/logflags"
 	"github.com/go-delve/delve/pkg/proc"
-	"github.com/go-delve/delve/pkg/terminal"
+	"github.com/Isletier/dvelve/pkg/terminal"
 	"github.com/go-delve/delve/pkg/version"
 	"github.com/go-delve/delve/service"
 	"github.com/go-delve/delve/service/api"
@@ -104,6 +105,11 @@ var (
 	attachWaitFor         string
 	attachWaitForInterval float64
 	attachWaitForDuration float64
+
+	// dvapAddr is the address for the DVAP SSE server (e.g. "127.0.0.1:9001").
+	// When set, the terminal client broadcasts debugger state after every
+	// state-changing operation to all connected SSE observers.
+	dvapAddr string
 )
 
 const dlvCommandLongDesc = `Delve is a source level debugger for Go programs.
@@ -167,6 +173,8 @@ func New(docCall bool) *cobra.Command {
 	must(rootCommand.MarkPersistentFlagFilename("redirect"))
 	rootCommand.PersistentFlags().BoolVar(&allowNonTerminalInteractive, "allow-non-terminal-interactive", false, "Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr")
 	rootCommand.PersistentFlags().BoolVar(&disableASLR, "disable-aslr", false, "Disables address space randomization")
+	rootCommand.PersistentFlags().StringVar(&dvapAddr, "dvap", "", "Address for the DVAP SSE server (e.g. 127.0.0.1:9001). When set, broadcasts debugger state to all connected SSE observers after every execution step or breakpoint change.")
+	must(rootCommand.RegisterFlagCompletionFunc("dvap", cobra.NoFileCompletions))
 
 	// 'attach' subcommand.
 	attachCommand := &cobra.Command{
@@ -1011,28 +1019,37 @@ func splitArgs(cmd *cobra.Command, args []string) ([]string, []string) {
 
 func connect(addr string, clientConn net.Conn, conf *config.Config) int {
 	// Create and start a terminal - attach to running instance
-	var client *rpc2.RPCClient
 	if clientConn == nil {
 		if clientConn = netDial(addr); clientConn == nil {
 			return 1 // already logged
 		}
 	}
-	client = rpc2.NewClientFromConn(clientConn)
-	if client.IsMulticlient() {
-		state, _ := client.GetStateNonBlocking()
+	rpcClient := rpc2.NewClientFromConn(clientConn)
+	if rpcClient.IsMulticlient() {
+		state, _ := rpcClient.GetStateNonBlocking()
 		// The error return of GetState will usually be the ErrProcessExited,
 		// which we don't care about. If there are other errors they will show up
 		// later, here we are only concerned about stopping a running target so
 		// that we can initialize our connection.
 		if state != nil && state.Running {
-			_, err := client.Halt()
+			_, err := rpcClient.Halt()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "could not halt: %v", err)
 				return 1
 			}
 		}
 	}
-	term := terminal.New(client, conf)
+	var svcClient service.Client = rpcClient
+	if dvapAddr != "" {
+		dvapSrv := dvap.New()
+		if err := dvapSrv.Start(dvapAddr); err != nil {
+			fmt.Fprintf(os.Stderr, "could not start DVAP server: %v\n", err)
+			return 1
+		}
+		defer dvapSrv.Stop()
+		svcClient = dvap.NewClient(rpcClient, dvapSrv)
+	}
+	term := terminal.New(svcClient, conf)
 	term.InitFile = initFile
 	status, err := term.Run()
 	if err != nil {

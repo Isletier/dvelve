@@ -3,7 +3,7 @@ package terminal
 import (
 	"slices"
 
-	"github.com/go-delve/delve/pkg/terminal/starbind"
+	"github.com/Isletier/dvelve/pkg/terminal/starbind"
 	"github.com/go-delve/delve/service"
 	"github.com/go-delve/delve/service/api"
 )
