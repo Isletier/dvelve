@@ -1,24 +1,89 @@
-![Delve](https://raw.githubusercontent.com/go-delve/delve/master/assets/delve_horizontal.png)
+## DVELVE
 
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/go-delve/delve/master/LICENSE)
-[![Go Reference](https://pkg.go.dev/badge/github.com/go-delve/delve.svg)](https://pkg.go.dev/github.com/go-delve/delve)
-[![Build Status](https://delve.teamcity.com/app/rest/builds/buildType:(id:Delve_AggregatorBuild)/statusIcon.svg)](https://delve.teamcity.com/viewType.html?buildTypeId=Delve_AggregatorBuild&guest=1)
+NOTE: Current implementation is very WIP (I really suck at Python). DO NOT USE IT unless you want to participate in its development.
 
-The GitHub issue tracker is for **bugs** only. Please use the [developer mailing list](https://groups.google.com/forum/#!forum/delve-dev) for any feature proposals and discussions.
+This is a client implementation(and a fork) of original [delve debugger](https://github.com/go-delve/delve) and an implementation of [DVAP(Debug view adapter protocol)](https://github.com/Isletier/DVAP).
 
-### About Delve
+Please read the original documentation first for basic use-cases.
 
-- [Installation](Documentation/installation)
-- [Getting Started](Documentation/cli/getting_started.md)
-- [Documentation](Documentation)
-  - [Command line options](Documentation/usage/dlv.md)
-  - [Command line client](Documentation/cli/README.md)
-  - [Plugins and GUIs](Documentation/EditorIntegration.md)
-  - [Frequently Asked Questions](Documentation/faq.md)
-- [Contributing](CONTRIBUTING.md)
-  - [AI Usage Policy](Documentation/AI/AI_POLICY.md)
-  - [Internal Documentation](Documentation/internal)
-  - [API documentation](Documentation/api)
-  - [How to write a Delve client](Documentation/api/ClientHowto.md)
+## gdb usage:
 
-Delve is a debugger for the Go programming language. The goal of the project is to provide a simple, full featured debugging tool for Go. Delve should be easy to invoke and easy to use. Chances are if you're using a debugger, things aren't going your way. With that in mind, Delve should stay out of your way as much as possible.
+```
+shell$ gdb
+gdb$ source ./DVAP_gdb_server.py
+```
+
+Or alternatively, just add the same line to the .gdbinit file in your $HOME directory; this will launch the server every time gdb starts:
+
+```
+source ./DVAP_gdb_server.py
+```
+
+## Neovim client:
+
+https://github.com/Isletier/nvim/tree/dev
+
+## About the concept
+
+REPLs are cool, but no matter how well their UI is implemented, they suck at one particular thing: displaying text and, as a consequence, execution flow.
+
+On the other side of the board, you have DAP. It was meant to solve the editor*debugger integration issue but ended up requiring same amount of configuration variations while significantly reducing debugger features that are language/debugger dependent.
+
+So, I think I have a solution: let the debugger's native UI fully define the current state of the debugging session and its launch, while the editor just stays a passive observer of the current state of things—in particular, threads, breakpoints, and their positions.
+
+I'm pretty sure this minimalistic interface could conform to any possible combination of editor/debugger/language, require zero non-UI configuration from the client side, and is generally more idiomatic for text interfaces and editors than the DAP IDE-like approach. All you need to do to start observing the debug session is just pass an endpoint to the DVAP server.
+
+## for VS code/DAP victims like me:
+
+- How to start debugging without an IDE?
+
+    1. You need to compile with debug symbols: the `-g` option on most compilers, or set the debug configuration for your build system.
+    2. Type this in your shell:
+
+```
+shell$ gdb { path_to_debugee }
+gdb$   run { args_for_debugee }
+```
+
+- How to set a breakpoint?
+
+```
+gdb$ b main.c:20
+```
+
+- How to continue/step in/step out/step over?
+
+```
+gdb$ continue
+gdb$ step
+gdb$ next
+gdb$ finish
+```
+
+Or alternetivly:
+
+```
+gdb$ c
+gdb$ s
+gdb$ n
+gdb$ f
+```
+
+Note that on an empty line, the Enter key will execute the previous instruction again. You can also do things like this:
+
+```
+gdb$ step 5
+```
+
+- How can I observe an editor and input commands to the debugger at the same time?
+
+Use your desktop environment, terminal, tmux, or Vim terminal mode to split the windows and quickly switch between them.
+
+## References
+
+https://sourceware.org/gdb/current/onlinedocs/gdb.html/Running.html#Running
+
+https://sourceware.org/gdb/current/onlinedocs/gdb.html/Python-API.html#Python-API
+
+https://microsoft.github.io/debug-adapter-protocol/specification
+

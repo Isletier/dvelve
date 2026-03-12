@@ -5,6 +5,34 @@ with code in this repository.
 
 ## Project Overview
 
+Dvelve is a fork of the original Delve project - debugger for the Go programming language.
+It is focused on the frontend of the original debugger, particullary, on the implementation of 
+DVAP protocol (Debug View Adapter Protocol).
+
+DVAP is an analog for Microsoft DAP protocol, but much simplified: the debugger's native UI fully 
+define the current state of the debugging session and its launch, while the editor just stays a passive 
+observer of the current state of things, in particular, threads, breakpoints, and their positions.
+
+### Structure
+
+Most of the original delve repository is used as a dependency through go.mod, except for two packages:
+
+```
+dvelve/
+├── cmd/dlv/                    # 1. CLI entry point and commands
+├── terminal/                   # 2. terminal pkg
+└── dvap/
+```
+
+Since those include neccesary direct changes mostly related to the new flag required for dvap.
+Also additional package for dvap implementation is added in `./dvap/` where most of the new logic is concetrated.
+Dvap package is basically a wrapper around original delve RpcClient.
+And also emits updated debugger state to the specified port.
+
+Since it's early stages of the project, original AGENTS.md for delve is preserved:
+
+# Delve project overview
+
 Delve is a debugger for the Go programming language. This is a complex,
 multi-layered system that requires understanding of debugging internals,
 DWARF format, OS-specific process control, and Go runtime internals.
