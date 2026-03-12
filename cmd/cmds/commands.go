@@ -18,13 +18,14 @@ import (
 	"time"
 
 	"github.com/Isletier/dvelve/cmd/cmds/helphelpers"
-	"github.com/Isletier/dvelve/service/dvap"
+	"github.com/Isletier/dvelve/dvap"
+
 	"github.com/go-delve/delve/pkg/config"
 	"github.com/go-delve/delve/pkg/gobuild"
 	"github.com/go-delve/delve/pkg/goversion"
 	"github.com/go-delve/delve/pkg/logflags"
 	"github.com/go-delve/delve/pkg/proc"
-	"github.com/Isletier/dvelve/pkg/terminal"
+	"github.com/Isletier/dvelve/terminal"
 	"github.com/go-delve/delve/pkg/version"
 	"github.com/go-delve/delve/service"
 	"github.com/go-delve/delve/service/api"

@@ -16,11 +16,12 @@ import (
 	"github.com/derekparker/trie/v3"
 	"github.com/go-delve/liner"
 
+	"github.com/Isletier/dvelve/terminal/colorize"
+	"github.com/Isletier/dvelve/terminal/starbind"
+
 	"github.com/go-delve/delve/pkg/config"
 	"github.com/go-delve/delve/pkg/goversion"
 	"github.com/go-delve/delve/pkg/locspec"
-	"github.com/Isletier/dvelve/pkg/terminal/colorize"
-	"github.com/Isletier/dvelve/pkg/terminal/starbind"
 	"github.com/go-delve/delve/service"
 	"github.com/go-delve/delve/service/api"
 )
