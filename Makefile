@@ -2,11 +2,11 @@
 
 # Build the dlv binary.
 build:
-	go build -o dlv ./cmd/
+	go build -o dlv ./dlv/
 
 # Install dlv to GOPATH/bin.
 install:
-	go install ./cmd/
+	go install ./dlv/
 
 # Remove dlv from GOPATH/bin.
 uninstall:
