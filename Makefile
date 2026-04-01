@@ -2,7 +2,7 @@
 
 # Build the dlv binary.
 build:
-	go build -o dlv ./dlv/
+	go build -o ./bin/dlv ./dlv/
 
 # Install dlv to GOPATH/bin.
 install:
