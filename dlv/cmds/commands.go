@@ -1041,8 +1041,9 @@ func connect(addr string, clientConn net.Conn, conf *config.Config) int {
 		}
 	}
 	var svcClient service.Client = rpcClient
+	var dvapSrv *dvap.Server
 	if dvapAddr != "" {
-		dvapSrv := dvap.New()
+		dvapSrv = dvap.New()
 		if err := dvapSrv.Start(dvapAddr); err != nil {
 			fmt.Fprintf(os.Stderr, "could not start DVAP server: %v\n", err)
 			return 1
@@ -1051,6 +1052,7 @@ func connect(addr string, clientConn net.Conn, conf *config.Config) int {
 		svcClient = dvap.NewClient(rpcClient, dvapSrv)
 	}
 	term := terminal.New(svcClient, conf)
+	term.SetDVAP(dvapSrv, dvapAddr)
 	term.InitFile = initFile
 	status, err := term.Run()
 	if err != nil {

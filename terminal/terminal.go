@@ -16,6 +16,7 @@ import (
 	"github.com/derekparker/trie/v3"
 	"github.com/go-delve/liner"
 
+	"github.com/Isletier/dvelve/dvap"
 	"github.com/Isletier/dvelve/terminal/colorize"
 	"github.com/Isletier/dvelve/terminal/starbind"
 
@@ -70,6 +71,10 @@ type Term struct {
 	starlarkEnv *starbind.Env
 
 	substitutePathRulesCache [][2]string
+
+	// dvap is the DVAP SSE server, nil if not running.
+	dvap     *dvap.Server
+	dvapAddr string
 
 	// quitContinue is set to true by exitCommand to signal that the process
 	// should be resumed before quitting.
@@ -174,6 +179,14 @@ func New(client service.Client, conf *config.Config) *Term {
 
 	t.starlarkEnv = starbind.New(starlarkContext{t}, t.stdout)
 	return t
+}
+
+// SetDVAP attaches a running DVAP server and its listen address to the
+// terminal so that the dvap subcommands (start/stop/restart/show/help) work.
+// srv may be nil when DVAP was not started at launch.
+func (t *Term) SetDVAP(srv *dvap.Server, addr string) {
+	t.dvap = srv
+	t.dvapAddr = addr
 }
 
 func (t *Term) updateConfig() {

@@ -37,30 +37,53 @@ import (
 // predictable even in programs with thousands of goroutines.
 const MaxGoroutines = 512
 
-// FormatState converts the current goroutine and breakpoint state into the
-// DVAP wire format — a single space-separated string of tokens:
+const (
+	fs = ";;" // field separator (within a record)
+	rs = "||" // record separator (between records)
+)
+
+// Thread type labels used in the wire format.
+const (
+	threadTypeGoroutine = "goroutine"
+	threadTypeThread    = "thread"
+)
+
+// FormatState converts the current debugger state into the DVAP wire format —
+// a sequence of records separated by "||", fields within each record separated
+// by ";;":
 //
-//	selected:{goid}
-//	thread:{goid}:{file}:{line}:{threadID}
-//	bp:{id}:{file}:{line}:{funcName}:{nonconditional}:{enabled}
+//	selected;;goroutine;;{goid}||           goroutine is focused
+//	selected;;thread;;{threadID}||          OS thread fallback (no goroutine)
+//	thread;;{goid};;{file};;{line};;{osThreadID};;goroutine||
+//	thread;;{osThreadID};;{file};;{line};;{goroutineID};;thread||
+//	bp;;{id};;{file};;{line};;{funcName};;{nonconditional};;{enabled}||
 //
-// selectedGoid is the goroutine currently focused by the debugger (-1 = none).
-// threadID is 0 when the goroutine is not scheduled on any OS thread.
+// Selection: goroutine wins over thread; thread is emitted only when
+// selectedGoid < 0 and selectedThreadID > 0.
 //
-// Goroutines are filtered: only Grunnable, Grunning, and Gsyscall goroutines
-// are emitted. Gwaiting (parked — channel, timer, mutex), Gdead, and Gidle
-// goroutines carry no useful navigation information and are omitted. The
-// selected goroutine is always included regardless of its status.
+// The cross-reference field in each thread record links the two layers:
+// for goroutine records it is the OS thread ID (0 = not scheduled);
+// for OS thread records it is the goroutine ID (0 = idle thread).
+//
+// Goroutine filtering: only Grunnable, Grunning, and Gsyscall goroutines are
+// emitted. Gwaiting, Gdead, and Gidle goroutines are omitted. The selected
+// goroutine is always included regardless of its status.
 // At most MaxGoroutines goroutines are emitted after filtering.
 //
+// All OS threads from the threads slice are emitted without filtering.
+//
 // Internal breakpoints (ID < 0) are omitted.
-func FormatState(goroutines []*api.Goroutine, breakpoints []*api.Breakpoint, selectedGoid int64) string {
+func FormatState(goroutines []*api.Goroutine, threads []*api.Thread, breakpoints []*api.Breakpoint, selectedGoid int64, selectedThreadID int) string {
 	var sb strings.Builder
 
+	// selected record: goroutine preferred, OS thread as fallback.
 	if selectedGoid >= 0 {
-		fmt.Fprintf(&sb, "selected:%d ", selectedGoid)
+		fmt.Fprintf(&sb, "selected%s%d%s%s%s", fs, selectedGoid, fs, threadTypeGoroutine,  rs)
+	} else if selectedThreadID > 0 {
+		fmt.Fprintf(&sb, "selected%s%d%s%s%s",  fs, selectedThreadID, fs, threadTypeThread, rs)
 	}
 
+	// Goroutine records.
 	count := 0
 	for _, g := range goroutines {
 		if g.Unreadable != "" {
@@ -76,9 +99,16 @@ func FormatState(goroutines []*api.Goroutine, breakpoints []*api.Breakpoint, sel
 		if count >= MaxGoroutines {
 			break
 		}
-		fmt.Fprintf(&sb, "thread:%d:%s:%d:%d ",
-			g.ID, g.CurrentLoc.File, g.CurrentLoc.Line, g.ThreadID)
+
+		fmt.Fprintf(&sb, "thread%s%d%s%s%s%s%s%d%s%d%s",
+			fs, g.ID, fs, threadTypeGoroutine, fs, g.CurrentLoc.File, fs, g.CurrentLoc.Line, fs, g.ThreadID, rs)
 		count++
+	}
+
+	// OS thread records — all threads, no filtering.
+	for _, th := range threads {
+		fmt.Fprintf(&sb, "thread%s%d%s%s%s%s%s%d%s%d%s",
+			fs, th.ID, fs, threadTypeThread, fs, th.File, fs, th.Line, fs, th.GoroutineID, rs)
 	}
 
 	for _, bp := range breakpoints {
@@ -86,10 +116,10 @@ func FormatState(goroutines []*api.Goroutine, breakpoints []*api.Breakpoint, sel
 			continue
 		}
 		nonconditional := bp.Cond == "" && bp.HitCond == ""
-		fmt.Fprintf(&sb, "bp:%d:%s:%d:%s:%t:%t ",
-			bp.ID, bp.File, bp.Line, bp.FunctionName,
-			nonconditional, !bp.Disabled)
+		fmt.Fprintf(&sb, "bp%s%d%s%s%s%d%s%s%s%t%s%t%s",
+			fs, bp.ID, fs, bp.File, fs, bp.Line, fs, bp.FunctionName,
+			fs, nonconditional, fs, !bp.Disabled, rs)
 	}
 
-	return strings.TrimSpace(sb.String())
+	return sb.String()
 }

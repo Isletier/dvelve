@@ -19,7 +19,9 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
+/*
 Package dvap implements a Debug View Adapter Protocol server.
 It serves the current debugger state (goroutines and breakpoints)
 as a plain-text SSE stream at GET /events, broadcasting on every
@@ -30,6 +32,7 @@ package dvap
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -130,6 +133,11 @@ func (s *Server) Addr() string {
 	return s.listener.Addr().String()
 }
 
+// IsRunning reports whether the server is currently serving.
+func (s *Server) IsRunning() bool {
+	return s.listener != nil
+}
+
 // Stop closes all open SSE connections and shuts down the HTTP server.
 // Blocks until shutdown completes.
 func (s *Server) Stop() {
@@ -138,6 +146,35 @@ func (s *Server) Stop() {
 	// for the long-lived SSE connections to drain on their own.
 	s.d.closeAll()
 	s.http.Shutdown(context.Background()) //nolint:errcheck
+	s.listener = nil
+}
+
+// Restart stops the current server (if running) and starts a new one on addr.
+// If addr is empty, the previously bound address is reused.
+// http.Server cannot be reused after Shutdown, so a fresh one is created.
+func (s *Server) Restart(addr string) error {
+	if addr == "" {
+		if s.listener != nil {
+			addr = s.listener.Addr().String()
+		} else {
+			return fmt.Errorf("dvap: no address specified and server was not previously started")
+		}
+	}
+	s.d.closeAll()
+	s.http.Shutdown(context.Background()) //nolint:errcheck
+	s.listener = nil
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/events", s.handleSSE)
+	s.http = &http.Server{Handler: mux}
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	s.listener = ln
+	go s.http.Serve(ln) //nolint:errcheck
+	return nil
 }
 
 // Broadcast sends a pre-formatted DVAP state string to all connected clients.

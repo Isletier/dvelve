@@ -233,10 +233,10 @@ func TestDVAPClient_Next_Broadcasts(t *testing.T) {
 	}
 
 	got := readEvent(t, resp, time.Second)
-	if !strings.Contains(got, "selected:3") {
-		t.Errorf("expected selected:3 in broadcast, got %q", got)
+	if !strings.Contains(got, "selected;;goroutine;;3||") {
+		t.Errorf("expected selected;;goroutine;;3 in broadcast, got %q", got)
 	}
-	if !strings.Contains(got, "thread:3:main.go:10:1") {
+	if !strings.Contains(got, "thread;;3;;main.go;;10;;1;;goroutine||") {
 		t.Errorf("expected goroutine token in broadcast, got %q", got)
 	}
 }
@@ -271,7 +271,7 @@ func TestDVAPClient_CreateBreakpoint_Broadcasts(t *testing.T) {
 	}
 
 	got := readEvent(t, resp, time.Second)
-	if !strings.Contains(got, "bp:1:main.go:5:main.main") {
+	if !strings.Contains(got, "bp;;1;;main.go;;5;;main.main") {
 		t.Errorf("expected breakpoint token in broadcast, got %q", got)
 	}
 }
