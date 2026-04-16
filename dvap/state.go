@@ -48,6 +48,13 @@ const (
 	threadTypeThread    = "thread"
 )
 
+func formatBool(value bool) string {
+	if !value {
+		return "False"
+	}
+	return "True"
+}
+
 // FormatState converts the current debugger state into the DVAP wire format —
 // a sequence of records separated by "||", fields within each record separated
 // by ";;":
@@ -73,6 +80,7 @@ const (
 // All OS threads from the threads slice are emitted without filtering.
 //
 // Internal breakpoints (ID < 0) are omitted.
+
 func FormatState(goroutines []*api.Goroutine, threads []*api.Thread, breakpoints []*api.Breakpoint, selectedGoid int64, selectedThreadID int) string {
 	var sb strings.Builder
 
@@ -115,10 +123,11 @@ func FormatState(goroutines []*api.Goroutine, threads []*api.Thread, breakpoints
 		if bp.ID < 0 {
 			continue
 		}
+
 		nonconditional := bp.Cond == "" && bp.HitCond == ""
-		fmt.Fprintf(&sb, "bp%s%d%s%s%s%d%s%s%s%t%s%t%s",
-			fs, bp.ID, fs, bp.File, fs, bp.Line, fs, bp.FunctionName,
-			fs, nonconditional, fs, !bp.Disabled, rs)
+		fmt.Fprintf(&sb, "bp%s%d%s%s%s%d%s%s%s%s%s",
+			fs, bp.ID, fs, bp.File, fs, bp.Line, fs, formatBool(nonconditional), 
+			fs, formatBool(!bp.Disabled), rs)
 	}
 
 	return sb.String()
