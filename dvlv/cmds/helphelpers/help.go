@@ -15,7 +15,7 @@ import (
 //
 // For example:
 //
-//	dlv --headless debug
+//	dvlv --headless debug
 //
 // must parse successfully even though the headless flag is not applicable
 // to the 'connect' subcommand.
@@ -24,7 +24,7 @@ import (
 // called.
 func Prepare(cmd *cobra.Command) {
 	switch cmd.Name() {
-	case "dlv", "help", "run", "version":
+	case "dvlv", "help", "run", "version":
 		hideAllFlags(cmd)
 	case "attach":
 		hideFlag(cmd, "build-flags")

@@ -1,16 +1,16 @@
 .DEFAULT_GOAL := test
 
-# Build the dlv binary.
+# Build the dvlv binary.
 build:
-	go build -o ./bin/dlv ./dlv/
+	go build -o ./build/dvlv ./dvlv/
 
-# Install dlv to GOPATH/bin.
+# Install dvlv to GOPATH/bin.
 install:
-	go install ./dlv/
+	go install ./dvlv/
 
-# Remove dlv from GOPATH/bin.
+# Remove dvlv from GOPATH/bin.
 uninstall:
-	go env GOPATH | xargs -I{} rm -f {}/bin/dlv
+	go env GOPATH | xargs -I{} rm -f {}/bin/dvlv
 
 # Run go vet across all packages.
 vet:

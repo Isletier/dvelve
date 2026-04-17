@@ -19,7 +19,7 @@ Most of the original delve repository is used as a dependency through go.mod, ex
 
 ```
 dvelve/
-├── cmd/dlv/                    # 1. CLI entry point and commands
+├── cmd/dvlv/                    # 1. CLI entry point and commands
 ├── terminal/                   # 2. terminal pkg
 └── dvap/
 ```

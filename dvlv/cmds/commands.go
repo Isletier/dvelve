@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Isletier/dvelve/dlv/cmds/helphelpers"
+	"github.com/Isletier/dvelve/dvlv/cmds/helphelpers"
 	"github.com/Isletier/dvelve/dvap"
 
 	"github.com/go-delve/delve/pkg/config"
@@ -113,16 +113,17 @@ var (
 	dvapAddr string
 )
 
-const dlvCommandLongDesc = `Delve is a source level debugger for Go programs.
+const dlvCommandLongDesc = `Dvelve is a source level debugger for Go programs, based on Delve.
 
-Delve enables you to interact with your program by controlling the execution of the process,
+Dvelve enables you to interact with your program by controlling the execution of the process,
 evaluating variables, and providing information of thread / goroutine state, CPU register state and more.
 
 The goal of this tool is to provide a simple yet powerful interface for debugging Go programs.
+The --dvap flag connects the session to a DVAP observer (e.g. a Neovim client).
 
 Pass flags to the program you are debugging using ` + "`--`" + `, for example:
 
-` + "`dlv exec ./hello -- server --config conf/config.toml`"
+` + "`dvlv exec ./hello -- server --config conf/config.toml`"
 
 // New returns an initialized command tree.
 func New(docCall bool) *cobra.Command {
@@ -142,8 +143,8 @@ func New(docCall bool) *cobra.Command {
 
 	// Main dlv root command.
 	rootCommand = &cobra.Command{
-		Use:   "dlv",
-		Short: "Delve is a debugger for the Go programming language.",
+		Use:   "dvlv",
+		Short: "Dvelve is a Delve-based debugger for Go with DVAP support.",
 		Long:  dlvCommandLongDesc,
 	}
 
@@ -233,18 +234,19 @@ option to let the process continue or kill it.
 		Long: `Starts a headless TCP server communicating via Debug Adaptor Protocol (DAP).
 
 The server is always headless and requires a DAP client like VS Code to connect and request a binary
-to be launched or a process to be attached to. The following modes can be specified via the client's launch config:
-- launch + exec   (executes precompiled binary, like 'dlv exec')
-- launch + debug  (builds and launches, like 'dlv debug')
-- launch + test   (builds and tests, like 'dlv test')
-- launch + replay (replays an rr trace, like 'dlv replay')
-- launch + core   (replays a core dump file, like 'dlv core')
-- attach + local  (attaches to a running process, like 'dlv attach')
+to be launched or a process to be attached to. Note: this mode as well as any implicit --headless is not compatible with "DVAP" mode.
+The following modes can be specified via the client's launch config:
+- launch + exec   (executes precompiled binary, like 'dvlv exec')
+- launch + debug  (builds and launches, like 'dvlv debug')
+- launch + test   (builds and tests, like 'dvlv test')
+- launch + replay (replays an rr trace, like 'dvlv replay')
+- launch + core   (replays a core dump file, like 'dvlv core')
+- attach + local  (attaches to a running process, like 'dvlv attach')
 
-Program and output binary paths will be interpreted relative to dlv's working directory.
+Program and output binary paths will be interpreted relative to dvlv's working directory.
 
 This server does not accept multiple client connections (--accept-multiclient).
-Use 'dlv [command] --headless' instead and a DAP client with attach + remote config.
+Use 'dvlv [command] --headless' instead and a DAP client with attach + remote config.
 While --continue is not supported, stopOnEntry launch/attach attribute can be used to control if
 execution is resumed at the start of the debug session.
 
@@ -339,7 +341,7 @@ unit tests. By default Delve will debug the tests in the current directory.
 Alternatively you can specify a package name, and Delve will debug the tests in
 that package instead. Double-dashes ` + "`--`" + ` can be used to pass arguments to the test program:
 
-dlv test [package] -- -test.run TestSomething -test.v -other-argument
+dvlv test [package] -- -test.run TestSomething -test.v -other-argument
 
 See also: 'go help testflag'.`,
 		Run:               testCmd,
@@ -417,7 +419,7 @@ Currently supports linux/amd64 and linux/arm64 core files, windows/amd64 minidum
 		Use:   "version",
 		Short: "Prints version.",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Delve Debugger\n%s\n", version.DelveVersion)
+			fmt.Printf("Dvelve Debugger (based on Delve)\n%s\n", version.DelveVersion)
 			if versionVerbose {
 				fmt.Printf("Build Details: %s\n", version.BuildInfo())
 			}
@@ -1246,7 +1248,7 @@ func configUsageFunc(cmd *cobra.Command) {
 		configUsageFunc(subcmd)
 	}
 
-	if cmd.Run == nil && cmd.Name() != "dlv" {
+	if cmd.Run == nil && cmd.Name() != "dvlv" {
 		return
 	}
 

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/Isletier/dvelve/dlv/cmds"
+	"github.com/Isletier/dvelve/dvlv/cmds"
 
 	"github.com/go-delve/delve/pkg/logflags"
 	"github.com/go-delve/delve/pkg/version"

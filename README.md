@@ -1,39 +1,94 @@
 ## DVELVE
 
-NOTE: Current implementation is very WIP (I really suck at Python). DO NOT USE IT unless you want to participate in its development.
+NOTE: Current implementation is still very WIP.
 
-This is a client implementation(and a fork) of original [delve debugger](https://github.com/go-delve/delve) and an implementation of [DVAP(Debug view adapter protocol)](https://github.com/Isletier/DVAP).
+This is a fork of the [delve debugger](https://github.com/go-delve/delve) with an implementation of [DVAP (Debug View Adapter Protocol)](https://github.com/Isletier/DVAP) added to it.
 
-Please read the original documentation first for basic use-cases.
+Please read the original delve documentation first for basic use-cases.
 
-## dvelve usage:
+## Installation
 
-```
-shell$ gdb
-gdb$ source ./DVAP_gdb_server.py
-```
-
-Or alternatively, just add the same line to the .gdbinit file in your $HOME directory; this will launch the server every time gdb starts:
+Requires Go 1.24 or later. The binary installs as `dvlv`.
 
 ```
-source ./DVAP_gdb_server.py
+shell$ go install github.com/Isletier/dvelve/dvlv@dvelve
 ```
 
-## Neovim client:
+Verify:
+
+```
+shell$ dvlv version
+Dvelve Debugger (based on Delve)
+Version: 1.26.1
+...
+
+shell$ dvlv debug --help | grep dvap
+      --dvap string    Address for the DVAP SSE server (e.g. 127.0.0.1:9001). ...
+```
+
+## Usage
+
+The only difference from vanilla delve is the `--dvap` flag, which takes the address of the SSE server dvelve will broadcast state to:
+
+```
+shell$ dvlv debug --dvap 127.0.0.1:9001
+shell$ dvlv exec ./mybinary --dvap 127.0.0.1:9001
+shell$ dvlv attach <pid> --dvap 127.0.0.1:9001
+```
+
+The flag is available on all subcommands that launch a local terminal session. It has no effect in headless mode.
+
+Once started, any client that connects to `http://127.0.0.1:9001/events` will receive the current debugger state as an SSE stream. The state is broadcast after every execution step or breakpoint change.
+
+## Neovim client
 
 https://github.com/Isletier/nvim/tree/dev
 
-## About the concept
+## If you're coming from an IDE
 
-REPLs are cool, but no matter how well their UI is implemented, they suck at one particular thing: displaying text and, as a consequence, execution flow.
+Compile with debug symbols — pass `-gcflags="all=-N -l"` to disable optimizations:
 
-On the other side of the board, you have DAP. It was meant to solve the editor*debugger integration issue but ended up requiring same amount of configuration variations while significantly reducing debugger features that are language/debugger dependent.
+```
+shell$ go build -gcflags="all=-N -l" -o myprogram .
+shell$ dvlv exec ./myprogram --dvap 127.0.0.1:9001
+```
 
-So, I think I have a solution: let the debugger's native UI fully define the current state of the debugging session and its launch, while the editor just stays a passive observer of the current state of things—in particular, threads, breakpoints, and their positions.
+Or let delve build for you, which disables optimizations automatically:
 
-I'm pretty sure this minimalistic interface could conform to any possible combination of editor/debugger/language, require zero non-UI configuration from the client side, and is generally more idiomatic for text interfaces and editors than the DAP IDE-like approach. All you need to do to start observing the debug session is just pass an endpoint to the DVAP server.
+```
+shell$ dvlv debug --dvap 127.0.0.1:9001
+```
 
-## for VS code/DAP victims like me:
+Set a breakpoint:
+
+```
+(dvlv) b main.go:20
+(dvlv) b main.MyFunction
+```
+
+Navigate execution:
+
+```
+(dvlv) continue   (or: c)     — resume
+(dvlv) step       (or: s)     — step into
+(dvlv) next       (or: n)     — step over
+(dvlv) stepout    (or: so)    — step out
+```
+
+Inspect state:
+
+```
+(dvlv) goroutines            — list all goroutines
+(dvlv) goroutine <id>        — switch to a goroutine
+(dvlv) locals                — print local variables
+(dvlv) p <expr>              — evaluate an expression
+(dvlv) stack                 — print stack trace
+```
+
+How to use the editor and debugger at the same time: split your terminal with tmux, your desktop environment, or Vim's terminal mode. The editor observes the session passively — you only ever type into the debugger.
 
 ## References
 
+https://github.com/go-delve/delve/tree/master/Documentation
+
+https://github.com/go-delve/delve/blob/master/Documentation/usage/dlv.md

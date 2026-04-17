@@ -115,7 +115,7 @@ func New(client service.Client, conf *config.Config) *Term {
 	t := &Term{
 		client: client,
 		conf:   conf,
-		prompt: "(dlv) ",
+		prompt: "(dvlv) ",
 		line:   liner.NewLiner(),
 		cmds:   cmds,
 		stdout: &transcriptWriter{pw: &pagingWriter{w: os.Stdout}},
@@ -287,7 +287,7 @@ func (t *Term) sigintGuard(ch <-chan os.Signal, multiClient bool) {
 			continue
 		}
 		if multiClient {
-			answer, err := t.line.Prompt("Would you like to [p]ause the target (returning to Delve's prompt) or [q]uit this client (leaving the target running) [p/q]? ")
+			answer, err := t.line.Prompt("Would you like to [p]ause the target (returning to dvlv's prompt) or [q]uit this client (leaving the target running) [p/q]? ")
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%v", err)
 				continue

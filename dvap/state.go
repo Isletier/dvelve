@@ -59,11 +59,11 @@ func formatBool(value bool) string {
 // a sequence of records separated by "||", fields within each record separated
 // by ";;":
 //
-//	selected;;goroutine;;{goid}||           goroutine is focused
-//	selected;;thread;;{threadID}||          OS thread fallback (no goroutine)
-//	thread;;{goid};;{file};;{line};;{osThreadID};;goroutine||
-//	thread;;{osThreadID};;{file};;{line};;{goroutineID};;thread||
-//	bp;;{id};;{file};;{line};;{funcName};;{nonconditional};;{enabled}||
+//	selected;;{goid};;goroutine||                              goroutine is focused
+//	selected;;{threadID};;thread||                             OS thread fallback (no goroutine)
+//	thread;;{goid};;goroutine;;{file};;{line};;{osThreadID}||
+//	thread;;{osThreadID};;thread;;{file};;{line};;{goroutineID}||
+//	bp;;{id};;{file};;{line};;{nonconditional};;{enabled}||
 //
 // Selection: goroutine wins over thread; thread is emitted only when
 // selectedGoid < 0 and selectedThreadID > 0.
