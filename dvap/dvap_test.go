@@ -139,6 +139,56 @@ func TestServer_StopClosesConnections(t *testing.T) {
 	}
 }
 
+func TestServer_IsRunning(t *testing.T) {
+	s := New()
+	if s.IsRunning() {
+		t.Fatal("IsRunning() should be false before Start")
+	}
+	if err := s.Start("127.0.0.1:0"); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if !s.IsRunning() {
+		t.Fatal("IsRunning() should be true after Start")
+	}
+	s.Stop()
+	if s.IsRunning() {
+		t.Fatal("IsRunning() should be false after Stop")
+	}
+}
+
+func TestServer_Restart(t *testing.T) {
+	s := New()
+	if err := s.Start("127.0.0.1:0"); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	// Restart on a fresh ephemeral port to avoid TIME_WAIT on the old one.
+	if err := s.Restart("127.0.0.1:0"); err != nil {
+		t.Fatalf("Restart: %v", err)
+	}
+	if !s.IsRunning() {
+		t.Fatal("IsRunning() should be true after Restart")
+	}
+	url := "http://" + s.Addr() + "/events"
+	resp, err := http.Get(url)
+	if err != nil {
+		t.Fatalf("GET /events after Restart: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200 after Restart, got %d", resp.StatusCode)
+	}
+	s.Stop()
+}
+
+func TestServer_RestartNoAddressNotStarted(t *testing.T) {
+	s := New()
+	err := s.Restart("")
+	if err == nil {
+		t.Fatal("expected error when Restart called without addr on unstarted server")
+	}
+}
+
 func TestServer_LocalhostOnly(t *testing.T) {
 	s := New()
 	if err := s.Start("127.0.0.1:0"); err != nil {

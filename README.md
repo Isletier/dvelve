@@ -6,7 +6,7 @@ This is a client implementation(and a fork) of original [delve debugger](https:/
 
 Please read the original documentation first for basic use-cases.
 
-## gdb usage:
+## dvelve usage:
 
 ```
 shell$ gdb
@@ -35,55 +35,5 @@ I'm pretty sure this minimalistic interface could conform to any possible combin
 
 ## for VS code/DAP victims like me:
 
-- How to start debugging without an IDE?
-
-    1. You need to compile with debug symbols: the `-g` option on most compilers, or set the debug configuration for your build system.
-    2. Type this in your shell:
-
-```
-shell$ gdb { path_to_debugee }
-gdb$   run { args_for_debugee }
-```
-
-- How to set a breakpoint?
-
-```
-gdb$ b main.c:20
-```
-
-- How to continue/step in/step out/step over?
-
-```
-gdb$ continue
-gdb$ step
-gdb$ next
-gdb$ finish
-```
-
-Or alternetivly:
-
-```
-gdb$ c
-gdb$ s
-gdb$ n
-gdb$ f
-```
-
-Note that on an empty line, the Enter key will execute the previous instruction again. You can also do things like this:
-
-```
-gdb$ step 5
-```
-
-- How can I observe an editor and input commands to the debugger at the same time?
-
-Use your desktop environment, terminal, tmux, or Vim terminal mode to split the windows and quickly switch between them.
-
 ## References
-
-https://sourceware.org/gdb/current/onlinedocs/gdb.html/Running.html#Running
-
-https://sourceware.org/gdb/current/onlinedocs/gdb.html/Python-API.html#Python-API
-
-https://microsoft.github.io/debug-adapter-protocol/specification
 

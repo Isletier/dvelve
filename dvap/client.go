@@ -65,6 +65,10 @@ func (c *Client) broadcastState(st *api.DebuggerState) {
 	if st.SelectedGoroutine != nil {
 		selectedGoid = st.SelectedGoroutine.ID
 	}
+	selectedThreadID := 0
+	if st.CurrentThread != nil {
+		selectedThreadID = st.CurrentThread.ID
+	}
 	goroutines, _, _ := c.Client.ListGoroutines(0, goroutineFetchLimit)
 	// Ensure the selected goroutine is always present even when it falls
 	// outside the fetch window (e.g. it is waiting/parked and goroutineFetchLimit
@@ -82,7 +86,7 @@ func (c *Client) broadcastState(st *api.DebuggerState) {
 		}
 	}
 	breakpoints, _ := c.Client.ListBreakpoints(false)
-	c.srv.Broadcast(FormatState(goroutines, breakpoints, selectedGoid))
+	c.srv.Broadcast(FormatState(goroutines, st.Threads, breakpoints, selectedGoid, selectedThreadID))
 }
 
 // wrapContinueChan forwards all values from inner, broadcasting after each

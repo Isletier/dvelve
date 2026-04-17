@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/cosiner/argv"
+	"github.com/Isletier/dvelve/dvap"
 	"github.com/go-delve/delve/pkg/config"
 	"github.com/go-delve/delve/pkg/locspec"
 	"github.com/go-delve/delve/pkg/proc/debuginfod"
@@ -684,6 +685,20 @@ The "note" is arbitrary text that can be used to identify the checkpoint, if it 
 Currently, rev next, step, step-instruction and stepout commands are supported.`,
 			})
 	}
+
+	c.cmds = append(c.cmds,
+		command{
+			aliases: []string{"dvap"},
+			cmdFn:   dvapCommand,
+			helpMsg: `Control the Debug View Adapter Protocol SSE server.
+
+  dvap start [addr]  -- start (or restart) the server; addr defaults to the
+                        previously used address or 127.0.0.1:8765
+  dvap stop          -- stop the server without ending the debug session
+  dvap show          -- print current server status and listen address
+  dvap set <addr>    -- change the default address (takes effect on next start)
+  dvap help          -- print this message`,
+		})
 
 	slices.SortFunc(c.cmds, func(a, b command) int {
 		return strings.Compare(a.aliases[0], b.aliases[0])
@@ -3661,6 +3676,75 @@ func (t *Term) formatBreakpointLocation(bp *api.Breakpoint) string {
 		fmt.Fprintf(&out, "%s:%d", p, bp.Line)
 	}
 	return out.String()
+}
+
+const dvapDefaultAddr = "127.0.0.1:8765"
+
+func dvapCommand(t *Term, ctx callContext, args string) error {
+	sub, rest, _ := strings.Cut(strings.TrimSpace(args), " ")
+	rest = strings.TrimSpace(rest)
+
+	switch sub {
+	case "", "help":
+		fmt.Fprintln(t.stdout, `dvap — Debug View Adapter Protocol server control
+
+  dvap start [addr]  start (or restart) the server
+                     addr defaults to the previously used address or `+dvapDefaultAddr+`
+  dvap stop          stop the server (debug session continues)
+  dvap show          print server status and listen address
+  dvap set <addr>    change the default address (takes effect on next start)
+  dvap help          print this message`)
+
+	case "show":
+		if t.dvap == nil || !t.dvap.IsRunning() {
+			fmt.Fprintln(t.stdout, "[DVAP] Server is not running.")
+		} else {
+			fmt.Fprintf(t.stdout, "[DVAP] Listening on %s\n", t.dvap.Addr())
+		}
+
+	case "set":
+		if rest == "" {
+			return fmt.Errorf("dvap set: address required")
+		}
+		t.dvapAddr = rest
+		fmt.Fprintf(t.stdout, "[DVAP] Default address set to %s\n", rest)
+
+	case "stop":
+		if t.dvap == nil || !t.dvap.IsRunning() {
+			fmt.Fprintln(t.stdout, "[DVAP] Server is not running.")
+			return nil
+		}
+		t.dvap.Stop()
+		fmt.Fprintln(t.stdout, "[DVAP] Server stopped.")
+
+	case "start":
+		addr := rest
+		if addr == "" {
+			if t.dvapAddr != "" {
+				addr = t.dvapAddr
+			} else {
+				addr = dvapDefaultAddr
+			}
+		}
+		if t.dvap == nil {
+			// First start: create a new server.
+			t.dvap = dvap.New()
+			if err := t.dvap.Start(addr); err != nil {
+				t.dvap = nil
+				return fmt.Errorf("dvap start: %w", err)
+			}
+		} else {
+			if err := t.dvap.Restart(addr); err != nil {
+				return fmt.Errorf("dvap restart: %w", err)
+			}
+		}
+		t.dvapAddr = t.dvap.Addr()
+		fmt.Fprintf(t.stdout, "[DVAP] Listening on %s\n", t.dvap.Addr())
+
+	default:
+		return fmt.Errorf("dvap: unknown subcommand %q — try 'dvap help'", sub)
+	}
+	return nil
 }
 
 func multiLineVar(v *api.Variable, indent string) string {
