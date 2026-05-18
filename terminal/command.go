@@ -3678,7 +3678,7 @@ func (t *Term) formatBreakpointLocation(bp *api.Breakpoint) string {
 	return out.String()
 }
 
-const dvapDefaultAddr = "127.0.0.1:8765"
+const dvapDefaultAddr = "127.0.0.1:56789"
 
 func dvapCommand(t *Term, ctx callContext, args string) error {
 	sub, rest, _ := strings.Cut(strings.TrimSpace(args), " ")

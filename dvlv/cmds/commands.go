@@ -107,7 +107,7 @@ var (
 	attachWaitForInterval float64
 	attachWaitForDuration float64
 
-	// dvapAddr is the address for the DVAP SSE server (e.g. "127.0.0.1:9001").
+	// dvapAddr is the address for the DVAP SSE server (e.g. "127.0.0.1:56789").
 	// When set, the terminal client broadcasts debugger state after every
 	// state-changing operation to all connected SSE observers.
 	dvapAddr string
@@ -175,7 +175,7 @@ func New(docCall bool) *cobra.Command {
 	must(rootCommand.MarkPersistentFlagFilename("redirect"))
 	rootCommand.PersistentFlags().BoolVar(&allowNonTerminalInteractive, "allow-non-terminal-interactive", false, "Allows interactive sessions of Delve that don't have a terminal as stdin, stdout and stderr")
 	rootCommand.PersistentFlags().BoolVar(&disableASLR, "disable-aslr", false, "Disables address space randomization")
-	rootCommand.PersistentFlags().StringVar(&dvapAddr, "dvap", "", "Address for the DVAP SSE server (e.g. 127.0.0.1:9001). When set, broadcasts debugger state to all connected SSE observers after every execution step or breakpoint change.")
+	rootCommand.PersistentFlags().StringVar(&dvapAddr, "dvap", "", "Address for the DVAP SSE server (e.g. 127.0.0.1:56789). When set, broadcasts debugger state to all connected SSE observers after every execution step or breakpoint change.")
 	must(rootCommand.RegisterFlagCompletionFunc("dvap", cobra.NoFileCompletions))
 
 	// 'attach' subcommand.
